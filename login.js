@@ -5,9 +5,6 @@ var bodyParser = require('body-parser');
 var compression = require('compression');
 var fs = require('fs');
 var qs = require('querystring');
-var mysql = require('mysql');
-var homeRouter = require('./routes/home');
-var authRouter = require('./routes/auth');
 var FileStore = require('session-file-store')(session)
 const port = 3000;
 
@@ -22,53 +19,10 @@ app.use(session({
     store:new FileStore()
 }));
 
-var authData = {
-    id:'harry06',
-    password:'1111',
-    nickname:'harry'
-  };
-  
-var passport = require('passport'),
-    LocalStrategy = require('passport-local').Strategy;
-  
-  app.use(passport.initialize());
-  app.use(passport.session());
+var passport = require('./lib/passport')(app);
 
-  passport.serializeUser(function(user, done) {
-    done(null, user.id);
-  });
-  
-  passport.deserializeUser(function(id, done) {
-    done(null, authData);
-  });
-
-  passport.use(new LocalStrategy(
-    {
-      usernameField: 'id',
-      passwordField: 'password' 
-    },
-    function(username, password, done) {
-      if(username == authData.id){
-        if(password == authData.password){
-          return done(null, authData);
-        } else{
-          return done(null, false, {
-            message: 'Incorrect password.'
-          });
-        }
-      } else{
-        return done(null, false, {
-          message: 'Incorrect name.'
-        });
-      }
-    }
-  ));
-  
-  app.post('/auth/login_process',
-    passport.authenticate('local', {
-      successRedirect: '/',
-      failureRedirect: '/auth/login'
-    }));
+var homeRouter = require('./routes/home');
+var authRouter = require('./routes/auth')(passport);
 
 app.use('/', homeRouter);
 app.use('/auth', authRouter);
@@ -85,4 +39,3 @@ app.use(function(err, req, res, next){
 app.listen(port, () => {
     console.log(`App listening on port ${port}`)
   });
-
